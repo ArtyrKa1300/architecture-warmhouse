@@ -1,0 +1,18 @@
+@startuml
+
+!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+title Context diagram «warm house»
+
+Person(user, "Пользователь", "Просматривает и управляет отоплением")
+
+System(warmhouse, "Тёплый дом", "Мониторинг и управление отоплением")
+
+System_Ext(externalSystemThermostat, "Модуль отопления", "Система управления отоплением")
+System_Ext(externalSystemTemperature, "Датчик температуры", "Система датчиков температуры")
+
+BiRel(user, warmhouse, "Управление и мониторинг отоплением")
+Rel(warmhouse, externalSystemThermostat, "Управление отоплением")
+Rel(externalSystemTemperature, warmhouse, "Передаёт показания")
+
+@enduml
