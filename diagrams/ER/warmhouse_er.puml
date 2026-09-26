@@ -1,0 +1,190 @@
+@startuml
+
+title Логическая ER-диаграмма целевой системы «Тёплый дом»
+hide circle
+skinparam linetype ortho
+
+package "Сервис пользователей и доступа" {
+    entity "USER" as USER {
+        * user_id : UUID <<PK>>
+        --
+        * email : varchar <<UQ>>
+        * password_hash : varchar
+        * status : varchar
+        * created_at : timestamp
+    }
+
+    entity "HOME" as HOME {
+        * home_id : UUID <<PK>>
+        --
+        * name : varchar
+        address : varchar
+        * created_at : timestamp
+    }
+
+    entity "USER_HOME" as USER_HOME {
+        * user_id : UUID <<PK, FK>>
+        * home_id : UUID <<PK, FK>>
+        --
+        * role : varchar
+        * created_at : timestamp
+    }
+}
+
+package "Сервис управления и интеграции устройств" {
+    entity "DEVICE" as DEVICE {
+        * device_id : UUID <<PK>>
+        --
+        * home_id : UUID <<logical reference>>
+        * type : varchar
+        * vendor : varchar
+        model : varchar
+        * protocol : varchar
+        * external_identifier : varchar
+        configuration : jsonb
+        * registration_status : varchar
+        * created_at : timestamp
+    }
+}
+
+package "Сервис температуры" {
+    entity "TEMPERATURE_READING" as TEMPERATURE_READING {
+        * reading_id : UUID <<PK>>
+        --
+        * device_id : UUID <<logical reference>>
+        * value : decimal
+        * unit : varchar
+        * measured_at : timestamp
+        received_at : timestamp
+    }
+}
+
+package "Сервис отопления" {
+    entity "HEATING_STATE" as HEATING_STATE {
+        * device_id : UUID <<PK, logical reference>>
+        --
+        * desired_state : boolean
+        * actual_state : boolean
+        * updated_at : timestamp
+    }
+}
+
+package "Сервис освещения" {
+    entity "LIGHTING_STATE" as LIGHTING_STATE {
+        * device_id : UUID <<PK, logical reference>>
+        --
+        * desired_state : boolean
+        * actual_state : boolean
+        * updated_at : timestamp
+    }
+}
+
+package "Сервис ворот" {
+    entity "GATE_STATE" as GATE_STATE {
+        * device_id : UUID <<PK, logical reference>>
+        --
+        * desired_state : varchar
+        * actual_state : varchar
+        * updated_at : timestamp
+    }
+}
+
+package "Сервис сценариев и автоматизации" {
+    entity "SCENARIO" as SCENARIO {
+        * scenario_id : UUID <<PK>>
+        --
+        * home_id : UUID <<logical reference>>
+        * created_by_user_id : UUID <<logical reference>>
+        * name : varchar
+        description : varchar
+        * enabled : boolean
+        * created_at : timestamp
+        * updated_at : timestamp
+    }
+
+    entity "SCENARIO_TRIGGER" as SCENARIO_TRIGGER {
+        * trigger_id : UUID <<PK>>
+        --
+        * scenario_id : UUID <<FK>>
+        * trigger_type : varchar
+        * configuration : jsonb
+    }
+
+    entity "SCENARIO_CONDITION" as SCENARIO_CONDITION {
+        * condition_id : UUID <<PK>>
+        --
+        * scenario_id : UUID <<FK>>
+        * condition_type : varchar
+        * configuration : jsonb
+    }
+
+    entity "SCENARIO_ACTION" as SCENARIO_ACTION {
+        * action_id : UUID <<PK>>
+        --
+        * scenario_id : UUID <<FK>>
+        * device_id : UUID <<logical reference>>
+        * action_type : varchar
+        * parameters : jsonb
+        * execution_order : integer
+    }
+
+    entity "SCENARIO_EXECUTION" as SCENARIO_EXECUTION {
+        * execution_id : UUID <<PK>>
+        --
+        * scenario_id : UUID <<FK>>
+        * status : varchar
+        * started_at : timestamp
+        completed_at : timestamp
+        error_message : varchar
+    }
+}
+
+package "Сервис видеонаблюдения" {
+    entity "VIDEO_STREAM" as VIDEO_STREAM {
+        * stream_id : UUID <<PK>>
+        --
+        * device_id : UUID <<logical reference>>
+        * status : varchar
+        * started_at : timestamp
+        ended_at : timestamp
+    }
+
+    entity "VIDEO_RECORDING" as VIDEO_RECORDING {
+        * recording_id : UUID <<PK>>
+        --
+        * device_id : UUID <<logical reference>>
+        * storage_key : varchar
+        * started_at : timestamp
+        * ended_at : timestamp
+        size_bytes : bigint
+    }
+}
+
+USER ||--o{ USER_HOME : "получает доступ"
+HOME ||--o{ USER_HOME : "доступен пользователям"
+
+SCENARIO ||--o{ SCENARIO_TRIGGER : "запускается"
+SCENARIO ||--o{ SCENARIO_CONDITION : "проверяет"
+SCENARIO ||--|{ SCENARIO_ACTION : "выполняет"
+SCENARIO ||--o{ SCENARIO_EXECUTION : "имеет запуски"
+
+HOME ||..o{ DEVICE : "содержит"
+USER ||..o{ SCENARIO : "создаёт"
+HOME ||..o{ SCENARIO : "имеет"
+
+DEVICE ||..o{ TEMPERATURE_READING : "передаёт показания"
+DEVICE ||..o| HEATING_STATE : "имеет состояние отопления"
+DEVICE ||..o| LIGHTING_STATE : "имеет состояние освещения"
+DEVICE ||..o| GATE_STATE : "имеет состояние ворот"
+DEVICE ||..o{ SCENARIO_ACTION : "является целью действия"
+DEVICE ||..o{ VIDEO_STREAM : "предоставляет поток"
+DEVICE ||..o{ VIDEO_RECORDING : "создаёт записи"
+
+legend bottom
+  |= Линия |= Значение |
+  | -- | Физическая связь внутри базы одного сервиса; может обеспечиваться внешним ключом |
+  | .. | Логическая ссылка между микросервисами по UUID; без межсервисного внешнего ключа |
+endlegend
+
+@enduml
+
