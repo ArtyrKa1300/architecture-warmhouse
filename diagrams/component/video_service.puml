@@ -1,0 +1,33 @@
+@startuml
+
+!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Компонентная диаграмма сервиса видеонаблюдения
+LAYOUT_LEFT_RIGHT()
+
+Container(apiGateway, "API Gateway / BFF", "Backend application", "Запрашивает доступ к видео")
+ContainerDb(videoDb, "Video DB", "PostgreSQL", "Камеры, потоки и метаданные записей")
+ContainerDb(videoStorage, "Хранилище видео", "Object Storage", "Видеозаписи; архитектурное допущение")
+System_Ext(partnerCameras, "Камеры партнёров", "Предоставляют видеопотоки")
+
+Container_Boundary(videoService, "Сервис видеонаблюдения") {
+    Component(videoApi, "Video API Controller", "REST API", "Предоставляет доступ к потокам и записям")
+    Component(streamService, "Video Stream Service", "Go", "Создаёт безопасный доступ к текущему видеопотоку")
+    Component(recordingService, "Video Recording Service", "Go", "Создаёт и получает видеозаписи")
+    Component(cameraAdapter, "Camera Adapter", "Protocol adapter", "Взаимодействует с камерами партнёров")
+    Component(videoRepository, "Video Metadata Repository", "Go repository", "Инкапсулирует доступ к метаданным видео")
+}
+
+Rel(apiGateway, videoApi, "Запрашивает потоки и записи", "HTTPS/JSON")
+Rel(videoApi, streamService, "Запрашивает доступ к текущему потоку", "Внутренний вызов")
+Rel(videoApi, recordingService, "Запрашивает видеозапись", "Внутренний вызов")
+Rel(streamService, cameraAdapter, "Запрашивает видеопоток", "Внутренний вызов")
+Rel(recordingService, cameraAdapter, "Получает видеопоток для записи", "Внутренний вызов")
+Rel(cameraAdapter, partnerCameras, "Получает видеопоток", "Протокол камеры")
+Rel(recordingService, videoStorage, "Сохраняет и получает видеозаписи", "S3 API")
+Rel(streamService, videoRepository, "Получает данные камеры и потока", "Интерфейс репозитория")
+Rel(recordingService, videoRepository, "Читает и сохраняет метаданные записи", "Интерфейс репозитория")
+Rel(videoRepository, videoDb, "Читает и сохраняет метаданные", "SQL")
+
+@enduml
+

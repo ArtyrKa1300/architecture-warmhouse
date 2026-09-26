@@ -1,0 +1,33 @@
+@startuml
+
+!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Компонентная диаграмма сервиса отопления
+LAYOUT_LEFT_RIGHT()
+
+Container(apiGateway, "API Gateway / BFF", "Backend application", "Передаёт команды пользователя")
+ContainerQueue(messageBroker, "Брокер сообщений", "Message broker", "Доставляет команды и события отопления")
+ContainerDb(heatingDb, "Heating DB", "PostgreSQL", "Состояние отопления и результаты команд")
+
+Container_Boundary(heatingService, "Сервис отопления") {
+    Component(heatingApi, "Heating API Controller", "REST API", "Принимает команды и возвращает состояние отопления")
+    Component(scenarioCommandConsumer, "Scenario Command Consumer", "Message Consumer", "Получает команды от сервиса сценариев")
+    Component(heatingStateConsumer, "Heating State Consumer", "Message Consumer", "Получает фактическое состояние оборудования")
+    Component(heatingApplicationService, "Heating Application Service", "Go", "Управляет желаемым и фактическим состоянием отопления")
+    Component(heatingCommandPublisher, "Heating Command Publisher", "Message Publisher", "Публикует команды физическому устройству")
+    Component(heatingRepository, "Heating Repository", "Go repository", "Инкапсулирует доступ к состоянию отопления")
+}
+
+Rel(apiGateway, heatingApi, "Управляет отоплением", "HTTPS/JSON")
+Rel(messageBroker, scenarioCommandConsumer, "Доставляет команды сценариев", "Асинхронные сообщения")
+Rel(messageBroker, heatingStateConsumer, "Доставляет фактическое состояние", "Асинхронные сообщения")
+Rel(heatingApi, heatingApplicationService, "Передаёт пользовательскую команду", "Внутренний вызов")
+Rel(scenarioCommandConsumer, heatingApplicationService, "Передаёт автоматическую команду", "Внутренний вызов")
+Rel(heatingStateConsumer, heatingApplicationService, "Передаёт новое состояние", "Внутренний вызов")
+Rel(heatingApplicationService, heatingRepository, "Читает и сохраняет состояние", "Интерфейс репозитория")
+Rel(heatingRepository, heatingDb, "Читает и сохраняет состояние", "SQL")
+Rel(heatingApplicationService, heatingCommandPublisher, "Передаёт команду устройству", "Внутренний вызов")
+Rel(heatingCommandPublisher, messageBroker, "Публикует команду отоплению", "Асинхронные сообщения")
+
+@enduml
+

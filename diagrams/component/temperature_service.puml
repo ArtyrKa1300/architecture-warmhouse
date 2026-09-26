@@ -1,0 +1,28 @@
+@startuml
+
+!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Компонентная диаграмма сервиса температуры
+
+Container(apiGateway, "API Gateway / BFF", "Backend application", "Единая точка входа")
+ContainerQueue(messageBroker, "Брокер сообщений", "Message broker", "Доставляет показания датчиков")
+ContainerDb(temperatureDb, "Temperature DB", "PostgreSQL", "Хранит показания температуры")
+
+Container_Boundary(serviceTemperature, "Сервис температуры") {
+
+    Component(APIControllerTemperature, "API контроллер температуры", "REST API", "Обрабатывает HTTP-запросы и возвращает показания температуры")
+    Component(TemperatureMessageConsumer, "Consumer сообщений о температуре", "Message Consumer", "Получает и обрабатывает сообщения о температуре")
+    Component(TemperatureApplicationService, "Приложение температуры", "GO", "Обрабатывает логику бизнес-процессов температуры")
+    Component(TemperatureRepository, "Репозиторий температуры", "SQL", "Обрабатывает запросы к базе данных температуры")
+
+}
+
+Rel(messageBroker, TemperatureMessageConsumer, "Получает сообщения о температуре", "Асинхронные сообщения/JSON")
+Rel(APIControllerTemperature, TemperatureApplicationService, "Запрашивает показания", "Внутренний вызов")
+
+Rel(TemperatureApplicationService, TemperatureRepository, "Читает и сохраняет показания", "Интерфейс репозитория")
+Rel(apiGateway, APIControllerTemperature, "Запрашивает показания температуры", "HTTPS/JSON")
+Rel(TemperatureMessageConsumer, TemperatureApplicationService, "Передаёт новое показание на обработку", "Внутренний вызов")
+Rel(TemperatureRepository, temperatureDb, "Читает и сохраняет показания", "SQL")
+
+@enduml

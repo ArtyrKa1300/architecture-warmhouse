@@ -1,0 +1,32 @@
+@startuml
+
+!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Компонентная диаграмма сервиса сценариев и автоматизации
+LAYOUT_LEFT_RIGHT()
+
+Container(apiGateway, "API Gateway / BFF", "Backend application", "Управляет пользовательскими сценариями")
+ContainerQueue(messageBroker, "Брокер сообщений", "Message broker", "Доставляет события, телеметрию и команды")
+ContainerDb(scenarioDb, "Scenario DB", "PostgreSQL", "Сценарии и история выполнения")
+
+Container_Boundary(scenarioService, "Сервис сценариев и автоматизации") {
+    Component(scenarioApi, "Scenario API Controller", "REST API", "Создаёт, изменяет и получает сценарии")
+    Component(eventConsumer, "Device Event Consumer", "Message Consumer", "Получает телеметрию и изменения состояния устройств")
+    Component(scheduler, "Scenario Scheduler", "Scheduler", "Запускает сценарии по расписанию")
+    Component(ruleEngine, "Scenario Rule Engine", "Go", "Проверяет условия и определяет действия сценария")
+    Component(scenarioCommandPublisher, "Scenario Command Publisher", "Message Publisher", "Публикует команды управляющим сервисам")
+    Component(scenarioRepository, "Scenario Repository", "Go repository", "Инкапсулирует доступ к сценариям и истории")
+}
+
+Rel(apiGateway, scenarioApi, "Управляет сценариями", "HTTPS/JSON")
+Rel(messageBroker, eventConsumer, "Доставляет телеметрию и события", "Асинхронные сообщения")
+Rel(scenarioApi, scenarioRepository, "Читает и сохраняет сценарии", "Интерфейс репозитория")
+Rel(eventConsumer, ruleEngine, "Передаёт событие для проверки условий", "Внутренний вызов")
+Rel(scheduler, ruleEngine, "Запускает проверку сценария по расписанию", "Внутренний вызов")
+Rel(ruleEngine, scenarioRepository, "Получает правила и сохраняет результат", "Интерфейс репозитория")
+Rel(ruleEngine, scenarioCommandPublisher, "Передаёт рассчитанные действия", "Внутренний вызов")
+Rel(scenarioCommandPublisher, messageBroker, "Публикует команды сценариев", "Асинхронные сообщения")
+Rel(scenarioRepository, scenarioDb, "Читает и сохраняет данные", "SQL")
+
+@enduml
+

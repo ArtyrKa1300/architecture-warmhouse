@@ -1,0 +1,60 @@
+@startuml
+
+title Диаграмма кода сервиса температуры
+skinparam classAttributeIconSize 0
+
+class TemperatureApiController {
+  +getLatest(deviceId: UUID): TemperatureReading
+  +getHistory(deviceId: UUID, from: Instant, to: Instant): List<TemperatureReading>
+}
+
+class TemperatureMessageConsumer {
+  +handle(message: TemperatureMessage): void
+}
+
+class TemperatureApplicationService {
+  +saveReading(message: TemperatureMessage): void
+  +getLatest(deviceId: UUID): TemperatureReading
+  +getHistory(deviceId: UUID, from: Instant, to: Instant): List<TemperatureReading>
+}
+
+interface TemperatureRepository {
+  +save(reading: TemperatureReading): void
+  +findLatest(deviceId: UUID): TemperatureReading
+  +findByPeriod(deviceId: UUID, from: Instant, to: Instant): List<TemperatureReading>
+}
+
+class PostgresTemperatureRepository {
+  -db: DatabaseConnection
+  +save(reading: TemperatureReading): void
+  +findLatest(deviceId: UUID): TemperatureReading
+  +findByPeriod(deviceId: UUID, from: Instant, to: Instant): List<TemperatureReading>
+}
+
+class TemperatureReading {
+  +id: UUID
+  +deviceId: UUID
+  +value: Decimal
+  +unit: String
+  +measuredAt: Instant
+}
+
+class TemperatureMessage {
+  +messageId: UUID
+  +deviceId: UUID
+  +value: Decimal
+  +unit: String
+  +measuredAt: Instant
+}
+
+TemperatureApiController --> TemperatureApplicationService : вызывает
+TemperatureMessageConsumer --> TemperatureApplicationService : передаёт показание
+TemperatureApplicationService --> TemperatureRepository : использует
+PostgresTemperatureRepository ..|> TemperatureRepository : реализует
+PostgresTemperatureRepository --> TemperatureReading : сохраняет и загружает
+TemperatureApplicationService --> TemperatureReading : возвращает
+TemperatureMessageConsumer --> TemperatureMessage : получает
+TemperatureApplicationService --> TemperatureMessage : преобразует
+
+@enduml
+

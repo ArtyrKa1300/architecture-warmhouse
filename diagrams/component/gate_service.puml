@@ -1,0 +1,33 @@
+@startuml
+
+!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Компонентная диаграмма сервиса ворот
+LAYOUT_LEFT_RIGHT()
+
+Container(apiGateway, "API Gateway / BFF", "Backend application", "Передаёт команды пользователя")
+ContainerQueue(messageBroker, "Брокер сообщений", "Message broker", "Доставляет команды и события ворот")
+ContainerDb(gateDb, "Gate DB", "PostgreSQL", "Состояние ворот и результаты команд")
+
+Container_Boundary(gateService, "Сервис ворот") {
+    Component(gateApi, "Gate API Controller", "REST API", "Принимает команды и возвращает состояние ворот")
+    Component(scenarioCommandConsumer, "Scenario Command Consumer", "Message Consumer", "Получает команды от сервиса сценариев")
+    Component(gateStateConsumer, "Gate State Consumer", "Message Consumer", "Получает фактическое состояние ворот")
+    Component(gateApplicationService, "Gate Application Service", "Go", "Управляет желаемым и фактическим состоянием ворот")
+    Component(gateCommandPublisher, "Gate Command Publisher", "Message Publisher", "Публикует команды физическому устройству")
+    Component(gateRepository, "Gate Repository", "Go repository", "Инкапсулирует доступ к состоянию ворот")
+}
+
+Rel(apiGateway, gateApi, "Управляет воротами", "HTTPS/JSON")
+Rel(messageBroker, scenarioCommandConsumer, "Доставляет команды сценариев", "Асинхронные сообщения")
+Rel(messageBroker, gateStateConsumer, "Доставляет фактическое состояние", "Асинхронные сообщения")
+Rel(gateApi, gateApplicationService, "Передаёт пользовательскую команду", "Внутренний вызов")
+Rel(scenarioCommandConsumer, gateApplicationService, "Передаёт автоматическую команду", "Внутренний вызов")
+Rel(gateStateConsumer, gateApplicationService, "Передаёт новое состояние", "Внутренний вызов")
+Rel(gateApplicationService, gateRepository, "Читает и сохраняет состояние", "Интерфейс репозитория")
+Rel(gateRepository, gateDb, "Читает и сохраняет состояние", "SQL")
+Rel(gateApplicationService, gateCommandPublisher, "Передаёт команду устройству", "Внутренний вызов")
+Rel(gateCommandPublisher, messageBroker, "Публикует команду воротам", "Асинхронные сообщения")
+
+@enduml
+
