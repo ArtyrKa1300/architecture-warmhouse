@@ -1,0 +1,37 @@
+@startuml
+
+!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Компонентная диаграмма сервиса управления и интеграции устройств
+LAYOUT_LEFT_RIGHT()
+
+Container(apiGateway, "API Gateway / BFF", "Backend application", "Регистрирует и настраивает устройства")
+ContainerQueue(messageBroker, "Брокер сообщений", "Message broker", "Доставляет команды и принимает события устройств")
+ContainerDb(deviceDb, "Device DB", "PostgreSQL", "Устройства, протоколы, конфигурации и привязки к домам")
+System_Ext(partnerDevices, "Устройства партнёров", "Внешнее оборудование разных производителей")
+
+Container_Boundary(deviceService, "Сервис управления и интеграции устройств") {
+    Component(deviceApi, "Device API Controller", "REST API", "Принимает запросы регистрации и настройки устройств")
+    Component(registrationService, "Device Registration Service", "Go", "Регистрирует устройство и привязывает его к дому")
+    Component(commandConsumer, "Device Command Consumer", "Message Consumer", "Получает команды управляющих сервисов")
+    Component(integrationService, "Device Integration Service", "Go", "Выбирает адаптер и координирует взаимодействие с устройством")
+    Component(adapterRegistry, "Device Adapter Registry", "Adapter collection", "Содержит адаптеры протоколов и производителей")
+    Component(deviceEventPublisher, "Device Event Publisher", "Message Publisher", "Публикует телеметрию и фактическое состояние")
+    Component(deviceRepository, "Device Repository", "Go repository", "Инкапсулирует доступ к данным устройств")
+}
+
+Rel(apiGateway, deviceApi, "Регистрирует и настраивает устройства", "HTTPS/JSON")
+Rel(deviceApi, registrationService, "Передаёт данные регистрации", "Внутренний вызов")
+Rel(registrationService, deviceRepository, "Сохраняет устройство и привязку", "Интерфейс репозитория")
+Rel(messageBroker, commandConsumer, "Доставляет команды устройствам", "Асинхронные сообщения")
+Rel(commandConsumer, integrationService, "Передаёт команду", "Внутренний вызов")
+Rel(integrationService, adapterRegistry, "Выбирает и вызывает адаптер", "Внутренний вызов")
+Rel(adapterRegistry, partnerDevices, "Передаёт команды и конфигурацию", "Протокол устройства")
+Rel(partnerDevices, adapterRegistry, "Передают телеметрию и состояние", "Протокол устройства")
+Rel(adapterRegistry, integrationService, "Передаёт ответ или событие устройства", "Внутренний вызов")
+Rel(integrationService, deviceEventPublisher, "Передаёт телеметрию и состояние", "Внутренний вызов")
+Rel(deviceEventPublisher, messageBroker, "Публикует события устройств", "Асинхронные сообщения")
+Rel(deviceRepository, deviceDb, "Читает и сохраняет устройства", "SQL")
+
+@enduml
+

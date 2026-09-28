@@ -1,0 +1,33 @@
+@startuml
+
+!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Компонентная диаграмма сервиса освещения
+LAYOUT_LEFT_RIGHT()
+
+Container(apiGateway, "API Gateway / BFF", "Backend application", "Передаёт команды пользователя")
+ContainerQueue(messageBroker, "Брокер сообщений", "Message broker", "Доставляет команды и события освещения")
+ContainerDb(lightingDb, "Lighting DB", "PostgreSQL", "Состояние освещения и результаты команд")
+
+Container_Boundary(lightingService, "Сервис освещения") {
+    Component(lightingApi, "Lighting API Controller", "REST API", "Принимает команды и возвращает состояние освещения")
+    Component(scenarioCommandConsumer, "Scenario Command Consumer", "Message Consumer", "Получает команды от сервиса сценариев")
+    Component(lightingStateConsumer, "Lighting State Consumer", "Message Consumer", "Получает фактическое состояние оборудования")
+    Component(lightingApplicationService, "Lighting Application Service", "Go", "Управляет желаемым и фактическим состоянием освещения")
+    Component(lightingCommandPublisher, "Lighting Command Publisher", "Message Publisher", "Публикует команды физическому устройству")
+    Component(lightingRepository, "Lighting Repository", "Go repository", "Инкапсулирует доступ к состоянию освещения")
+}
+
+Rel(apiGateway, lightingApi, "Управляет освещением", "HTTPS/JSON")
+Rel(messageBroker, scenarioCommandConsumer, "Доставляет команды сценариев", "Асинхронные сообщения")
+Rel(messageBroker, lightingStateConsumer, "Доставляет фактическое состояние", "Асинхронные сообщения")
+Rel(lightingApi, lightingApplicationService, "Передаёт пользовательскую команду", "Внутренний вызов")
+Rel(scenarioCommandConsumer, lightingApplicationService, "Передаёт автоматическую команду", "Внутренний вызов")
+Rel(lightingStateConsumer, lightingApplicationService, "Передаёт новое состояние", "Внутренний вызов")
+Rel(lightingApplicationService, lightingRepository, "Читает и сохраняет состояние", "Интерфейс репозитория")
+Rel(lightingRepository, lightingDb, "Читает и сохраняет состояние", "SQL")
+Rel(lightingApplicationService, lightingCommandPublisher, "Передаёт команду устройству", "Внутренний вызов")
+Rel(lightingCommandPublisher, messageBroker, "Публикует команду освещению", "Асинхронные сообщения")
+
+@enduml
+

@@ -1,0 +1,685 @@
+openapi: 3.0.3
+
+info:
+  title: Warm House API
+  description: API целевой экосистемы «Тёплый дом»
+  version: 1.0.0
+
+servers:
+  - url: https://api.warmhouse.example.com
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Lighting
+  - name: Devices
+  - name: Temperature
+  - name: Scenarios
+
+paths:
+  /api/v1/lights/{deviceId}/state:
+    get:
+      tags:
+        - Lighting
+      summary: Получить текущее состояние освещения
+      operationId: getLightingState
+
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          description: Идентификатор устройства освещения
+          schema:
+            type: string
+            format: uuid
+
+      responses:
+        '200':
+          description: Текущее состояние освещения
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetLightingStatusResponse'
+        '400':
+          description: Невалидный идентификатор устройства
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Токен отсутствует или недействителен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Доступ запрещен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Устройство не найдено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Устройство не является устройством освещения
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+        - Lighting
+      summary: Изменить состояние освещения
+      operationId: setLightingState
+
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          description: Идентификатор устройства освещения
+          schema:
+            type: string
+            format: uuid
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetLightingStateRequest'
+
+      responses:
+        '202':
+          description: Команда принята к выполнению
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightingCommandResponse'
+        '400':
+          description: Невалидное тело запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Токен отсутствует или недействителен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Доступ запрещен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Устройство не найдено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Устройство не является устройством освещения
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/homes/{homeId}/devices:
+    post:
+      tags:
+        - Devices
+      summary: Добавить новое устройство в дом
+      operationId: addDeviceToHome
+
+      parameters:
+        - name: homeId
+          in: path
+          required: true
+          description: Идентификатор дома
+          schema:
+            type: string
+            format: uuid
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterDeviceRequest'
+
+      responses:
+          '201':
+            description: Устройство успешно зарегистрировано
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/RegisterDeviceResponse'
+          '400':
+            description: Невалидное тело запроса
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ErrorResponse'
+          '401':
+            description: Токен отсутствует или недействителен
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ErrorResponse'
+          '403':
+            description: Доступ запрещен
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ErrorResponse'
+          '404':
+            description: Дом не найден
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ErrorResponse'
+          '409':
+            description: Устройство с таким идентификатором уже зарегистрировано
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ErrorResponse'
+          '500':
+            description: Внутренняя ошибка сервера
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/temperature/{deviceId}/latest:
+    post:
+      tags:
+        - Temperature
+      summary: Получение последнего значения температуры в доме
+      operationId: getLatestTemperature
+
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          description: Идентификатор устройства
+          schema:
+            type: string
+            format: uuid
+
+      responses:
+        '200':
+          description: Получение последней температуры в доме
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetTemperatureResponse'
+        '401':
+          description: Токен отсутствует или недействителен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Доступ запрещен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Устройство не найдено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/homes/{homeId}/scenarios:
+    post:
+      tags:
+        - Scenarios
+      summary: Добавить новое сценарий в дом
+      operationId: addScenarioToHome
+
+      parameters:
+        - name: homeId
+          in: path
+          required: true
+          description: Идентификатор дома
+          schema:
+            type: string
+            format: uuid
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddScenarioRequest'
+
+      responses:
+        '201':
+          description: Сценарий успешно добавлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterDeviceResponse'
+        '400':
+          description: Невалидное тело запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Токен отсутствует или недействителен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Доступ запрещен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Дом не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Устройство с таким идентификатором уже зарегистрировано
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    AddScenarioRequest:
+      type: object
+      required:
+        - name
+        - description
+        - enabled
+        - trigger
+
+      properties:
+        name:
+          type: string
+          description: Название сценария
+          example: "Выключение света вечером"
+
+        description:
+          type: string
+          description: Описание сценария
+          example: "Выключает свет каждый день в 22:00"
+
+        enabled:
+          type: boolean
+          description: Управление состоянием освещения (включить/выключить)
+          example: true
+
+        trigger:
+          type: object
+          description: Триггер сценария
+          properties:
+            type:
+              type: string
+              enum:
+                - time
+                - sensor
+                - schedule
+              description: Тип триггера (например, "time", "sensor", "schedule")
+              example: "schedule"
+            configuration:
+              type: object
+              description: Конфигурация триггера
+              properties:
+                time:
+                  type: string
+                  description: Время срабатывания триггера в формате HH:mm
+                  example: "22:00"
+                timezone:
+                  type: string
+                  description: Часовой пояс для времени срабатывания триггера
+                  example: "Europe/Moscow"
+                days_of_week:
+                  type: array
+                  description: Дни недели, в которые срабатывает триггер
+                  items:
+                    type: string
+                    enum:
+                      - Monday
+                      - Tuesday
+                      - Wednesday
+                      - Thursday
+                      - Friday
+                      - Saturday
+                      - Sunday
+                  example: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+        conditions:
+          type: array
+          description: Условия для выполнения сценария
+        actions:
+          type: array
+          description: Действия, выполняемые при срабатывании сценария
+          items:
+            type: object
+            properties:
+              device_id:
+                type: string
+                format: uuid
+                description: Идентификатор устройства, на котором выполняется действие
+                example: "684127d8-2ef8-4c98-a61e-d78f5fedb0ca"
+              action_type:
+                type: string
+                description: Тип действия (например, "turn_on", "turn_off", "set_brightness")
+                example: "turn_off"
+              parameters:
+                type: object
+                description: Параметры действия
+                properties:
+                  brightness:
+                    type: integer
+                    description: Уровень яркости (если применимо)
+                    example: 50
+              execution_order:
+                type: integer
+                description: Порядок выполнения действия в сценарии
+                example: 1
+    SetLightingStateRequest:
+      type: object
+      required:
+        - desired_state
+      properties:
+        desired_state:
+          type: boolean
+          description: Управление состоянием освещения (включить/выключить)
+          example: true
+
+    LightingCommandResponse:
+      type: object
+      required:
+        - command_id
+        - device_id
+        - desired_state
+        - status
+        - requested_at
+      properties:
+        command_id:
+          type: string
+          format: uuid
+          description: Уникальный идентификатор команды
+          example: "684127d8-2ef8-4c98-a61e-d78f5fedb0ca"
+
+        device_id:
+          type: string
+          format: uuid
+          description: Идентификатор устройства освещения
+          example: "684127d8-2ef8-4c98-a61e-d78f5fedb0ca"
+
+        desired_state:
+          type: boolean
+          description: Желаемое состояние освещения (включено/выключено)
+          example: true
+
+        status:
+          type: string
+          enum:
+            - accepted
+          description: Статус выполнения команды
+          example: "accepted"
+
+        requested_at:
+          type: string
+          format: date-time
+          description: Время приёма команды сервисом
+          example: "2024-06-01T12:00:00Z"
+
+    GetLightingStatusResponse:
+      type: object
+      required:
+        - device_id
+        - desired_state
+        - actual_state
+        - status
+        - updated_at
+      properties:
+        device_id:
+          type: string
+          format: uuid
+          description: Идентификатор устройства освещения
+          example: "684127d8-2ef8-4c98-a61e-d78f5fedb0ca"
+
+        desired_state:
+          type: boolean
+          description: Желаемое состояние освещения (включено/выключено)
+          example: true
+
+        actual_state:
+          type: boolean
+          nullable: true
+          description: Фактическое состояние освещения (включено/выключено)
+          example: true
+
+        status:
+          type: string
+          enum:
+            - online
+            - offline
+            - unknown
+          description: Статус доступности устройства
+          example: "online"
+
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Время обновления состояния устройства
+          example: "2024-06-01T12:00:00Z"
+
+    RegisterDeviceRequest:
+      type: object
+      required:
+        - external_identifier
+        - type
+        - vendor
+        - model
+        - protocol
+        - configuration
+      properties:
+        external_identifier:
+          type: string
+          description: Уникальный идентификатор устройства
+          example: "684127d8-2ef8-4c98-a61e-d78f5fedb0ca"
+
+        type:
+          type: string
+          description: Тип устройства
+          example: "lighting"
+
+        vendor:
+          type: string
+          description: Производитель устройства
+          example: "Philips"
+
+        model:
+          type: string
+          description: Модель устройства
+          example: "Hue Bridge"
+
+        protocol:
+          type: string
+          description: Протокол связи
+          example: "Zigbee"
+
+        configuration:
+          type: object
+          description: Конфигурация устройства
+          properties:
+            brightness:
+              type: integer
+              description: Уровень яркости
+              example: 60
+            color_temperature:
+              type: integer
+              description: Цветовая температура
+              example: 3000
+            poll_interval_seconds:
+              type: integer
+              description: Интервал опроса устройства в секундах
+              example: 60
+            unit:
+                type: string
+                description: Единица измерения температуры
+                example: "celsius"
+
+    RegisterDeviceResponse:
+      type: object
+      required:
+        - device_id
+        - home_id
+        - external_identifier
+        - type
+        - vendor
+        - model
+        - protocol
+        - registration_status
+        - created_at
+      properties:
+        device_id:
+          type: string
+          format: uuid
+          description: Уникальный идентификатор устройства
+          example: "684127d8-2ef8-4c98-a61e-d78f5fedb0ca"
+
+        home_id:
+          type: string
+          format: uuid
+          description: Уникальный идентификатор дома
+          example: "684127d8-2ef8-4c98-a61e-d78f5fedb0ca"
+
+        external_identifier:
+          type: string
+          format: uuid
+          description: Уникальный идентификатор устройства
+          example: "684127d8-2ef8-4c98-a61e-d78f5fedb0ca"
+
+        type:
+          type: string
+          description: Тип устройства
+          example: "lighting"
+
+        vendor:
+          type: string
+          description: Производитель устройства
+          example: "Philips"
+
+        model:
+          type: string
+          description: Модель устройства
+          example: "Hue Bridge"
+
+        protocol:
+          type: string
+          description: Протокол связи
+          example: "Zigbee"
+
+        registration_status:
+          type: string
+          enum:
+            - registered
+            - pending
+            - failed
+          description: Статус регистрации устройства
+          example: "registered"
+
+        created_at:
+          type: string
+          format: date-time
+          description: Время создания записи о устройстве
+          example: "2024-06-01T12:00:00Z"
+
+    GetTemperatureResponse:
+      type: object
+      required:
+        - device_id
+        - value
+        - unit
+        - measured_at
+        - received_at
+      properties:
+        device_id:
+          type: string
+          format: uuid
+          description: Уникальный идентификатор устройства
+          example: "684127d8-2ef8-4c98-a61e-d78f5fedb0ca"
+        value:
+          type: number
+          format: float
+          description: Значение температуры
+          example: 22.5
+        unit:
+          type: string
+          description: Единица измерения температуры
+          example: "celsius"
+        measured_at:
+          type: string
+          format: date-time
+          description: Время измерения температуры устройством
+          example: "2024-06-01T12:00:00Z"
+        received_at:
+          type: string
+          format: date-time
+          description: Время получения значения температуры сервисом
+          example: "2024-06-01T12:00:05Z"
+
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          example: DEVICE_NOT_FOUND
+        message:
+          type: string
+          example: Устройство не найдено

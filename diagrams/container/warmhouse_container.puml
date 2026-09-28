@@ -1,0 +1,86 @@
+@startuml
+
+!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title Контейнерная диаграмма целевой системы «Тёплый дом»
+
+LAYOUT_LEFT_RIGHT()
+
+Person(user, "Пользователь", "Управляет домом через веб-интерфейс")
+
+System_Ext(partnerDevices, "Устройства партнёров", "Датчики и управляемое оборудование разных производителей")
+
+System_Boundary(warmhouse, "Тёплый дом") {
+
+    Container(webUi, "Web UI", "Web application", "Показывает состояние дома и принимает команды пользователя")
+
+    Container(apiGateway, "API Gateway / BFF", "Backend application", "Единая точка входа для Web UI")
+
+    Container(authService, "Сервис пользователей и доступа", "Backend service", "Аутентификация, авторизация и управление доступом к домам")
+
+    ContainerDb(authDb, "Auth DB", "PostgreSQL", "Учётные записи, хеши паролей, дома и права доступа")
+
+    Container(serviceTemperature, "Сервис температуры", "Backend service", "Управление показаниями температуры")
+    ContainerDb(temperatureDb, "Temperature DB", "PostgreSQL", "Показания температуры")
+
+    Container(serviceHeating, "Сервис отопления", "Backend service", "Управление системой отопления")
+    Container(serviceLighting, "Сервис освещения", "Backend service", "Управление системой освещения")
+    Container(serviceVideo, "Сервис видео", "Backend service", "Управление системой видеонаблюдения")
+    ContainerDb(heatingDb, "Heating DB", "PostgreSQL", "Желаемое и фактическое состояние отопления")
+
+    ContainerDb(lightingDb, "Lighting DB", "PostgreSQL", "Желаемое и фактическое состояние освещения")
+
+    ContainerDb(gateDb, "Gate DB", "PostgreSQL", "Желаемое и фактическое состояние ворот")
+    ContainerDb(videoDb, "Video DB", "PostgreSQL", "Камеры, видеопотоки и метаданные записей")
+    Container(serviceScenario, "Сервис автоматизации", "Backend service", "Управление системой автоматизации")
+    ContainerDb(scenarioDb, "Scenario DB", "PostgreSQL", "Сценарии автоматизации")
+    Container(serviceGate, "Сервис управления воротами", "Backend service", "Управляет состоянием автоматических ворот")
+
+    Container(serviceDevice, "Сервис управления и интеграции устройств", "Backend service", "Регистрирует устройства и взаимодействует с оборудованием партнёров")
+    ContainerDb(deviceDb, "Device DB", "PostgreSQL", "Устройства, производители, протоколы, конфигурации и привязки к домам")
+    ContainerQueue(messageBroker, "Брокер сообщений", "Message broker", "Доставка команд и событий между сервисами")
+
+    ContainerDb(videoStorage, "Хранилище видео", "Object Storage", "Видеозаписи")
+
+    Rel(user, webUi, "Использует")
+    Rel(webUi, apiGateway, "Отправляет запросы", "HTTPS/JSON")
+    Rel(apiGateway, serviceHeating, "Управляет отоплением", "HTTPS/JSON")
+    Rel(apiGateway, serviceTemperature, "Получает показания температуры", "HTTPS/JSON")
+    Rel(apiGateway, serviceLighting, "Управляет освещением", "HTTPS/JSON")
+    Rel(apiGateway, serviceVideo, "Запрашивает видеопотоки и записи", "HTTPS/JSON")
+    Rel(apiGateway, serviceScenario, "Создаёт и изменяет сценарии", "HTTPS/JSON")
+    Rel(apiGateway, serviceGate, "Управляет воротами", "HTTPS/JSON")
+    Rel(apiGateway, serviceDevice, "Регистрирует и настраивает устройства", "HTTPS/JSON")
+
+    Rel(serviceHeating, heatingDb, "Сохраняет данные отопления", "SQL")
+    Rel(serviceTemperature, temperatureDb, "Сохраняет показания температуры", "SQL")
+    Rel(serviceLighting, lightingDb, "Сохраняет данные освещения", "SQL")
+    Rel(serviceVideo, videoDb, "Читает и сохраняет метаданные видео", "SQL")
+    Rel(serviceVideo, videoStorage, "Сохраняет и получает видеозаписи", "S3 API")
+    Rel(serviceScenario, scenarioDb, "Сохраняет сценарии", "SQL")
+    Rel(serviceGate, gateDb, "Сохраняет данные ворот", "SQL")
+    Rel(serviceDevice, deviceDb, "Сохраняет данные устройств", "SQL")
+
+    Rel(apiGateway, authService, "Выполняет вход и проверяет доступ", "HTTPS/JSON")
+    Rel(authService, authDb, "Читает и сохраняет учётные записи и права", "SQL")
+
+    Rel(serviceDevice, partnerDevices, "Передаёт команды и конфигурацию")
+    Rel(partnerDevices, serviceDevice, "Передают телеметрию и фактическое состояние")
+
+    Rel(serviceHeating, messageBroker, "Публикует команды отоплению", "Асинхронные сообщения")
+    Rel(serviceLighting, messageBroker, "Публикует команды освещению", "Асинхронные сообщения")
+    Rel(serviceGate, messageBroker, "Публикует команды воротам", "Асинхронные сообщения")
+
+    Rel(messageBroker, serviceDevice, "Доставляет команды устройствам", "Асинхронные сообщения")
+    Rel(serviceDevice, messageBroker, "Публикует телеметрию и состояния устройств", "Асинхронные сообщения")
+
+    Rel(messageBroker, serviceTemperature, "Доставляет показания температуры", "Асинхронные сообщения")
+    Rel(messageBroker, serviceHeating, "Доставляет состояние отопления", "Асинхронные сообщения")
+    Rel(messageBroker, serviceLighting, "Доставляет состояние освещения", "Асинхронные сообщения")
+    Rel(messageBroker, serviceGate, "Доставляет состояние ворот", "Асинхронные сообщения")
+    Rel(serviceScenario, messageBroker, "Публикует команды по сработавшим сценариям", "Асинхронные сообщения")
+
+    Rel(messageBroker, serviceScenario, "Доставляет события и телеметрию для проверки условий", "Асинхронные сообщения")
+}
+
+@enduml

@@ -1,0 +1,27 @@
+@startuml
+
+!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Компонентная диаграмма сервиса пользователей и доступа
+LAYOUT_LEFT_RIGHT()
+
+Container(apiGateway, "API Gateway / BFF", "Backend application", "Передаёт запросы входа и проверки доступа")
+ContainerDb(authDb, "Auth DB", "PostgreSQL", "Пользователи, хеши паролей, дома и права")
+
+Container_Boundary(authService, "Сервис пользователей и доступа") {
+    Component(authApi, "Auth API Controller", "REST API", "Принимает запросы входа и проверки доступа")
+    Component(authenticationComponent, "Компонент аутентификации", "Go component", "Проверяет учётные данные")
+    Component(authorizationComponent, "Компонент авторизации", "Go component", "Проверяет доступ пользователя к дому и устройствам")
+    Component(tokenManager, "Token Manager", "Go component", "Выпускает и проверяет токены доступа")
+    Component(authRepository, "Auth Repository", "Go repository", "Читает и сохраняет пользователей и права")
+}
+
+Rel(apiGateway, authApi, "Выполняет вход и проверяет доступ", "HTTPS/JSON")
+Rel(authApi, authenticationComponent, "Передаёт учётные данные", "Внутренний вызов")
+Rel(authApi, authorizationComponent, "Передаёт запрос проверки доступа", "Внутренний вызов")
+Rel(authenticationComponent, tokenManager, "Запрашивает выпуск токена", "Внутренний вызов")
+Rel(authenticationComponent, authRepository, "Получает учётную запись", "Интерфейс репозитория")
+Rel(authorizationComponent, authRepository, "Получает права и связи с домами", "Интерфейс репозитория")
+Rel(authRepository, authDb, "Читает и сохраняет данные", "SQL")
+
+@enduml
